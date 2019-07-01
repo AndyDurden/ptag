@@ -10,6 +10,7 @@ I have a directory of papers organized with tags and metadata (author, publicati
 Search algo sucks right now, these will improve at some point.
 
 | Query | 1000 files | 10,000 files | 100,000 files |
+| --- | --- | --- | --- |
 | "a"   | 0.075 s   |  0.275 s  | 2.427 s |
 | "author:andy" | 0.076 s  | 0.294 s | 2.638 s |
 | "(a or b)" | 0.082 s  | 0.818 s | 93.416 s  |
