@@ -2,7 +2,7 @@
 
 ptag is a portable file tagging and metadata cli utility which uses only the python standard library. It is intended to operate on directory trees with around 10,000 files or less.
 
-Other tagging programs have more features, are faster, and more scalable, so if your use case isn't similar to mine you're probably better off using those.
+Other tagging programs have more features, are faster, and more scalable, so if your use case isn't similar to mine you're probably better off using one of those.
 I have a directory of papers organized with tags and metadata (author, publication date, etc.) that I regularly rsync between my work computer (linux), home computer (windows), and a couple other devices. Most other tagging programs are platform specific and/or use databases (fast and scalable, but don't rsync easily). ptag itself is a python file, and stores tags in a json file (.tags), so it's easy to transfer between and run on different computers. Oh and it keeps track of md5 to clear up duplicate file situations when I rename files or move them into subdirectories before an rsync.
 
 ## Timings
