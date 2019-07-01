@@ -19,6 +19,7 @@ Search algo sucks right now, these will improve at some point.
 | "((a and b) or c)" | 0.081 s | 0.659 s | 64.833 s |
 | "(((not author:andy) and (not b)) or (b and (not c)))" | 0.242 s | 23.8 s | 43.5 Min. :( |
 
+For more info see benchmark.py
 
 ## To Do
 
