@@ -306,7 +306,7 @@ if sys.argv[1] == "search":
 
 if sys.argv[1] == "merge":
   for f in os.listdir("."):
-    if f.startswith(".tags_"):
+    if (f.startswith(".tags_") and not f.endswith('.bak')):
       if f == ".tags_"+(platform.node()).lower(): continue
       else:
         print("Adding tags from : "+f+"\n")
