@@ -194,7 +194,7 @@ class synctag():
         if key == item[keytype]:
           keycheck.remove(key)
           for tag in taglist:
-            if mode=="add":
+            if ((mode=="add") and (unicode(tag) not in item['tags'])):
               item['tags'].append(unicode(tag))
             elif mode=="remove":
               try: item['tags'].remove(unicode(tag))
