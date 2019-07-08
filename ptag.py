@@ -5,6 +5,7 @@ import hashlib
 import ast
 import json
 import sys
+import platform
 
 class synctag():
   def __init__(self, tagfile):
@@ -20,6 +21,12 @@ class synctag():
       f.close(); del f
 
   def update_file(self):
+    # Backup
+    f = open(self.tagfile, 'r')
+    fb = open(self.tagfile+'.bak', 'w')
+    fb.write(f.read()) # tagfiles under 100M even for huge filesets, memory waste shouldnt matter
+    fb.close(); del fb; f.close(); del f
+    # Write new file
     f = open(self.tagfile, 'w')
     f.write(json.dumps(self.items, sort_keys=True, indent=2))
     f.close(); del f
@@ -233,11 +240,21 @@ class synctag():
     # if so this entry is a duplicate that we can remove
     for item2 in self.items:
       if item2['md5'] == item['md5']:
+        # Merge the items incase the old name's entry had all the tag data.
+        for tag in item:
+          if tag not in item2['tags']: item2['tags'].append(otag)
+        for metakey in item['meta']:
+          if metakey in item2['meta']:
+            item2['meta'][ometakey] = item['meta'][ometakey]
+          else: item2['meta'][ometakey] = item['meta'][ometakey]
+        item2['tags'].sort()
         self.items.remove(item)
         return "Duplicate"
     # first search for matching name in subdirectories, verify by md5
     for root, dirs, files in os.walk('.'):
       for f in files:
+        # Would it be faster to remove indexed items from 'files' so we don't hash indexed things?
+        # Or is interating over the self.items dict slower? depends on sizes of dir and self.items :/
         if (f.split("/")[-1] == item["path"].split("/")[-1]):
           fhash = hashlib.md5(open(os.path.join(root,f),'rb').read()).hexdigest()
           if fhash == item["md5"]:
@@ -247,13 +264,37 @@ class synctag():
     if checkall:
       for root, dirs, files in os.walk('.'):
         for f in files:
-          fhash = hashlib.md5(open(os.path.join(root,f),'rb').read()).hexdigest()
-          if fhash == item["md5"]:
-            item["path"] = os.path.join(root, f)
-            return True
+          if (f.split("/")[-1] != item["path"].split("/")[-1]): # already checked matching names
+            fhash = hashlib.md5(open(os.path.join(root,f),'rb').read()).hexdigest()
+            if fhash == item["md5"]:
+              item["path"] = os.path.join(root, f)
+              return True
     return False
 
-t = synctag(".tags")
+  # Accept tagfile from other host, add stuff we dont have
+  # Work only by paths, fixing MD5 mismatches should be in other functions
+  def merge_tagfile(tagfile):
+    oitems = json.loads(open(tagfile,'r').read())
+    for item in oitems:
+      i = next((i for i,d in enumerate(self.items) if item['path'] == d['path']), None)
+      if i: 
+        for otag in item['tags']:
+          if otag not in self.items[i]['tags']: self.items[i]['tags'].append(otag)
+        for ometakey in item['meta']:
+          if ometakey in self.items[i]['meta']:
+            # If both are set but differ, what should we do? most recent date modified? (i think thats preserved by rsync -azvp )
+            # for now just assume other is correct
+            self.items[i]['meta'][ometakey] = item['meta'][ometakey]
+          else: self.items[i]['meta'][ometakey] = item['meta'][ometakey]
+        self.items[i]['tags'].sort()
+      else:
+        self.items.append(item)
+    return True
+      
+        
+
+
+t = synctag(".tags_"+(platform.node()).lower())
 
 
 if sys.argv[1] == "search":
@@ -262,6 +303,15 @@ if sys.argv[1] == "search":
   for item in results:
     print(item['path'])
   sys.exit(0)
+
+if sys.argv[1] == "merge":
+  for f in os.listdir("."):
+    if f.startswith(".tags_"):
+      if f == ".tags_"+(platform.node()).lower(): continue
+      else:
+        print("Adding tags from : "+f+"\n")
+        t.merge_tagfile(f)
+        #os.remove(f)
 
 elif sys.argv[1] == "add":
   if t.is_indexed(sys.argv[3]):
