@@ -273,7 +273,7 @@ class synctag():
 
   # Accept tagfile from other host, add stuff we dont have
   # Work only by paths, fixing MD5 mismatches should be in other functions
-  def merge_tagfile(tagfile):
+  def merge_tagfile(self,tagfile):
     oitems = json.loads(open(tagfile,'r').read())
     for item in oitems:
       i = next((i for i,d in enumerate(self.items) if item['path'] == d['path']), None)
@@ -309,9 +309,11 @@ if sys.argv[1] == "merge":
     if (f.startswith(".tags_") and not f.endswith('.bak')):
       if f == ".tags_"+(platform.node()).lower(): continue
       else:
-        print("Adding tags from : "+f+"\n")
+        print("Adding tags from: "+f+"\n")
         t.merge_tagfile(f)
-        #os.remove(f)
+        os.remove(f)
+  t.update_file()
+  sys.exit(0)
 
 elif sys.argv[1] == "add":
   if t.is_indexed(sys.argv[3]):
