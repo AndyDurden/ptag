@@ -7,13 +7,33 @@ import json
 import sys
 import platform
 
+# Available settings:
+# directory_mode: upward or downward
+#   upward: collect eveything in to .tags in a chosen parent directory (root_ceiling)
+#   downward: tagdata will be stored in a .tags file in the same directory as the tagged file
+# root_ceiling: [directory name]
+#   directory for .tags in directory_mode=upward, and in both modes non-cwd searches will be carried out in all subdirectories of root_ceiling
+#   Note: if [directory name] is not a full path, no subdirectory should have the same name or it will be treated as the root_ceiling for its subdirectories. If [directory name] is a full path, things could break if you rsync the filesystem to a system with a different parent directory structure.
+# default_search: cwd, cwd-strict full
+#   cwd: only return files within the current directory and its subdirectories by default
+#   cwd-strict: only return files within the current directory (subdirectories are not included)
+#   full: searches within root_ceiling and its subdirectories, as long as your cwd is within that tree.
+
+
 class synctag():
   def __init__(self, tagfile):
     self.tagfile = tagfile
     self.items = []
+    self.settings = {}
+    self.json = None
     if os.path.isfile(tagfile):
       f = open(tagfile,'r')
-      self.items = json.loads(f.read())
+      self.json = json.loads(f.read())
+      if type(self.json) == list:
+        self.items = self.json
+      else:
+        self.items = self.json["items"]
+        self.settings = self.json["settings"]
       f.close(); del f
     else:
       f = open(tagfile,'w')
@@ -22,13 +42,14 @@ class synctag():
 
   def update_file(self):
     # Backup
+    self.settings["test"] = "test!!"
     f = open(self.tagfile, 'r')
     fb = open(self.tagfile+'.bak', 'w')
     fb.write(f.read()) # tagfiles under 100M even for huge filesets, memory waste shouldnt matter
     fb.close(); del fb; f.close(); del f
     # Write new file
     f = open(self.tagfile, 'w')
-    f.write(json.dumps(self.items, sort_keys=True, indent=2))
+    f.write(json.dumps( {"items":self.items, "settings":self.settings}, sort_keys=True, indent=2))
     f.close(); del f
 
 
@@ -274,7 +295,13 @@ class synctag():
   # Accept tagfile from other host, add stuff we dont have
   # Work only by paths, fixing MD5 mismatches should be in other functions
   def merge_tagfile(self,tagfile):
-    oitems = json.loads(open(tagfile,'r').read())
+    ojson = json.loads(open(tagfile,'r').read())
+    osettings = {}
+    if type(ojson) == list:
+      oitems = ojson
+    else:
+      oitems = ojson["items"]
+      osettings = ojson["settings"]
     for item in oitems:
       i = next((i for i,d in enumerate(self.items) if item['path'] == d['path']), None)
       if i: 
